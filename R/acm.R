@@ -1,8 +1,6 @@
 #install.packages("FactoMineR")
 #install.packages("factoextra")
 
-# input : banque_entrainement et banque_test
-
 library(FactoMineR)
 library(factoextra)
 library(dplyr)
@@ -76,7 +74,7 @@ acm_custom <- function (entrainement, test){
   # Matrice des coordonnées des observations (gènes seulement), test
   X_test_reduit <- projection_test$coord[, 1:n_axes, drop = FALSE]
   
-  entrainement_acm <- cbind(entrainement_original[, "Resistance.phenotype", drop = FALSE], X_entrainement_reduit) %>%
+  entrainement_acm <- cbind(entrainement_original[, "Resistance.phenotype", drop = FALSE], X_entrainement_reduit)
     
   test_acm <- cbind(test_original[, "Resistance.phenotype", drop = FALSE], X_test_reduit)
   
