@@ -7,7 +7,10 @@ library(FactoMineR)
 library(factoextra)
 library(dplyr)
   
-entrainement <- read.csv("Data/banque_entrainement.csv") %>%
+entrainement_original <- read.csv("Data/banque_entrainement.csv")
+test_original <- read.csv("Data/banque_test.csv")
+
+entrainement <- entrainement_original %>%
   select(-Resistance.phenotype, -BioSample, -X) %>%
   # enlève les colonnes où toutes les valeurs sont la même (dans ce cas, sont tous égaux à 0)
   select(where(~ n_distinct(.) > 1)) %>%
@@ -18,7 +21,7 @@ acm1 <- MCA(entrainement, ncp = 650, graph = FALSE)
 
 
 # Lire banque_test
-test <- read.csv("Data/banque_test.csv") %>%
+test <- test_original %>%
   # garder exactement les mêmes gènes que pour l'ACM
   select(all_of(names(entrainement)))
 test_corrige <- test
@@ -59,12 +62,15 @@ projection_test <- predict(acm1, newdata = test_corrige)
 n_axes <- which(acm1$eig[, 3] >= 90)[1]
 
 
+
 # Matrice des coordonnées des observations (gènes seulement), entrainement
-x_entrainement_reduit <- acm1$ind$coord[, 1:n_axes, drop = FALSE]
+X_entrainement_reduit <- acm1$ind$coord[, 1:n_axes, drop = FALSE]
 
 # Matrice des coordonnées des observations (gènes seulement), test
 X_test_reduit <- projection_test$coord[, 1:n_axes, drop = FALSE]
 
+entrainement_acm <- cbind(entrainement_original[, "Resistance.phenotype", drop = FALSE], X_entrainement_reduit)
+test_acm <- cbind(test_original[, "Resistance.phenotype", drop = FALSE], X_test_reduit)
 
-
-
+write.csv(entrainement_acm, file = "Data/entraintement_acm.csv")
+write.csv(test_acm, file = "Data/test_acm.csv")
