@@ -89,6 +89,7 @@ filtre_donnes <- function(n_plis){
   # --------- creer banque d'entrainement et banque de validation/test ----------
   # =============================================================================
   
+  # TODO refaire ça
   pattern_validation <- c(1, 1, 1, rep(0, 17))
   pattern_test <- c(rep(0, 17), 1, 1, 1)
   pattern_entrainement <- c(rep(0, 3), rep(1, 14), rep(0, 3))
@@ -108,7 +109,11 @@ filtre_donnes <- function(n_plis){
     filter(rep(pattern_entrainement, length.out = n())==1)
   
   # Écrit les banques de données dans Data/
-  write.csv(banque_validation, file = "Data/banque_validation.csv")
-  write.csv(banque_test, file = "Data/banque_test.csv")
-  write.csv(banque_entrainement, file = "Data/banque_entrainement.csv")
+  # return(
+  #     list(cross = bank_crossval, test = bank_test, cross_idx = cross_idx)
+  # )
+  
+  return(
+      list(train=banque_entrainement, val=banque_validation, test=banque_test)
+  )
 }
