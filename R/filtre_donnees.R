@@ -77,40 +77,10 @@ filtre_donnes <- function(AST, AMR) {
       names_from = gene,
       values_from = presence,
       values_fill = 0
-    )
+    ) %>%
+    # Enlève les doublons de gènes (observations qui ont les mêmes valeurs pour tous les gènes)
+    distinct(across(-c(BioSample, Resistance.phenotype)), .keep_all = TRUE)
   
   # Valeur de retour
   genes_ACM_ciprofloxacin_wide
-  
-#   # =============================================================================
-#   # --------- creer banque d'entrainement et banque de validation/test ----------
-#   # =============================================================================
-#   
-#   # TODO refaire ça
-#   pattern_validation <- c(1, 1, 1, rep(0, 17))
-#   pattern_test <- c(rep(0, 17), 1, 1, 1)
-#   pattern_entrainement <- c(rep(0, 3), rep(1, 14), rep(0, 3))
-#   
-#   banque_validation <- genes_ACM_ciprofloxacin_wide %>%
-#     # ca choisit les 3 premiers sur 20 (15%) pour chaque chunk de 20 observations.
-#     # le length.out = n, ca fait juste dire de continuer le pattern sur tout le tibble
-#     # le == 1 dit de garder seulement les elements qui sont egals a 1 dans le pattern validation
-#     filter(rep(pattern_validation, length.out = n())==1)
-#   
-#   banque_test <- genes_ACM_ciprofloxacin_wide %>%
-#     filter(rep(pattern_test, length.out = n())==1)
-#   
-#   # banque d'entrainement est toutes les donnees sauf celles de test/validation
-#   
-#   banque_entrainement <- genes_ACM_ciprofloxacin_wide %>%
-#     filter(rep(pattern_entrainement, length.out = n())==1)
-#   
-#   # Écrit les banques de données dans Data/
-#   # return(
-#   #     list(cross = bank_crossval, test = bank_test, cross_idx = cross_idx)
-#   # )
-#   
-#   return(
-#       list(train=banque_entrainement, val=banque_validation, test=banque_test)
-#   )
 }
