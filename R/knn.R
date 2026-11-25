@@ -43,7 +43,13 @@
 # 
 #    Returns
 #  ═══════════
-# bla_bla
+# une liste contenant 2 choses:
+# 1. model : une df avec 2 colonnes : 
+#               colonne 1 = %chance susceptible
+#               colonne 2 = %chance resistant
+# 2. prediction : un vecteur de la prédiction de chaque observation:
+#                 0 si susceptible
+#                 1 si résistant
 #
 
 #install.packages("KernelKnn")
@@ -67,7 +73,7 @@ knn_custom <- function(entrainement, validation, distance = "manhattan", nb_vois
     mutate(Resistance.phenotype = as.factor(Resistance.phenotype))
   
   # =============================================================================
-  # ---------------------- librairie KernelKnn (Jaccard) ------------------------
+  # -------------------------- librairie KernelKnn ------------------------------
   # =============================================================================
   
   # Cette librairie nécessite que les banques de données soient sans leur classe
@@ -82,6 +88,7 @@ knn_custom <- function(entrainement, validation, distance = "manhattan", nb_vois
   # resistance_entrainement c basically la colonne de Resistance.phenotype
   resistance_entrainement <- as.factor(entrainement$Resistance.phenotype)
   
+  # model est un
   model <- KernelKnn(
     data = genes_entrainement,
     TEST_data = genes_test,
@@ -92,16 +99,30 @@ knn_custom <- function(entrainement, validation, distance = "manhattan", nb_vois
     regression = FALSE,
     Levels = seq_along(levels(resistance_entrainement)),
     threads = max(1, parallel::detectCores() - 2)
-  )
+  ) %>% 
+    rename(class_1 = susceptible, class_2 = resistant)
   predictions <- levels(resistance_entrainement)[max.col(model)]
   
   return(list(model = model, 
             predictions = predictions))
 }
 
+length(predictions)
+
+(sum(testacm$Resistance.phenotype == predictions$predictions))/length(predictions$predictions)
+
+# Test Jaccard
 entrainementx <- read.csv("Data/banque_entrainement.csv")
 testx <- read.csv("Data/banque_test.csv")
 
 system.time({
-  predictions <- knn_custom(entrainementx, testx, distance = "jaccard_coefficient", nb_voisins = 5, kernel = "uniform", ordre_minkowski=3)
+  predictions <- knn_custom(entrainementx, testx, distance = "jaccard_coefficient", nb_voisins = 5, kernel = NULL)
+})
+
+# Test euclidienne
+entrainementacm <- read.csv("Data/entrainement_acm.csv")
+testacm <- read.csv("Data/test_acm.csv")
+
+system.time({
+  predictions <- knn_custom(entrainementacm, testacm, distance = "euclidean", nb_voisins = 5, kernel = NULL)
 })
