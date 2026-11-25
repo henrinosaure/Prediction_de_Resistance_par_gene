@@ -99,8 +99,11 @@ knn_custom <- function(entrainement, validation, distance = "manhattan", nb_vois
     regression = FALSE,
     Levels = seq_along(levels(resistance_entrainement)),
     threads = max(1, parallel::detectCores() - 2)
-    ) %>% 
-    # rename(class_1 = susceptible, class_2 = resistant)
+    ) %>%
+    
+    as.data.frame() %>%
+    rename(susceptible = class_1, resistant = class_2)
+  
   predictions <- levels(resistance_entrainement)[max.col(model)]
   
   return(list(model = model, 
