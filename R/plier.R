@@ -33,10 +33,6 @@
 # validation et d'entrainement.
 
 
-# ╔═════════════════════════════════════════╗
-# ║                  Main                   ║
-# ╚═════════════════════════════════════════╝
-
 plier <- function(p_len_data, p_nplis, p_val_ratio) {
     
     # Vecteur contenant tous les indices dans un ordre aléatoire
