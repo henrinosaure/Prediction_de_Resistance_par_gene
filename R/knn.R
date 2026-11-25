@@ -99,30 +99,10 @@ knn_custom <- function(entrainement, validation, distance = "manhattan", nb_vois
     regression = FALSE,
     Levels = seq_along(levels(resistance_entrainement)),
     threads = max(1, parallel::detectCores() - 2)
-  ) %>% 
+    ) %>% 
     rename(class_1 = susceptible, class_2 = resistant)
   predictions <- levels(resistance_entrainement)[max.col(model)]
   
   return(list(model = model, 
             predictions = predictions))
 }
-
-length(predictions)
-
-(sum(testacm$Resistance.phenotype == predictions$predictions))/length(predictions$predictions)
-
-# Test Jaccard
-entrainementx <- read.csv("Data/banque_entrainement.csv")
-testx <- read.csv("Data/banque_test.csv")
-
-system.time({
-  predictions <- knn_custom(entrainementx, testx, distance = "jaccard_coefficient", nb_voisins = 5, kernel = NULL)
-})
-
-# Test euclidienne
-entrainementacm <- read.csv("Data/entrainement_acm.csv")
-testacm <- read.csv("Data/test_acm.csv")
-
-system.time({
-  predictions <- knn_custom(entrainementacm, testacm, distance = "euclidean", nb_voisins = 5, kernel = NULL)
-})
