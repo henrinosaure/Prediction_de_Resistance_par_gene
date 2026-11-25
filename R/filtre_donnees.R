@@ -1,24 +1,18 @@
 #install.packages("tidyverse")
 library(tidyverse)
-filtre_donnes <- function(n_plis){
+filtre_donnes <- function(AST, AMR) {
   # =============================================================================
   # ---------- Lecture et clean/réorganisation des fichiers de données ----------
   # =============================================================================
   
-  NCBI_AST <- read_tsv("Data/NCBI_AST.tsv") %>%
-    rename_with(~ sub("^#BioSample$", "BioSample", .x))
-  
-  NCBI_AMR <- read_tsv("Data/NCBI_AMR.tsv") %>%
-    rename_with(~ sub("^#BioSample$", "BioSample", .x))
-  
   # Filtre et combine les 2 banques de donnees, gardant les colonnes :
-  # BioSample, Organism Group, Antibiotic, Resistance phenotype et AMR Genotypes
-  NCBI_filtered <- NCBI_AST %>%
-    filter(`BioSample` %in% NCBI_AMR$`BioSample`) %>%
+  # BioSample, Organism Group, Antibiotic, Resistance.phenotype et AMR Genotypes
+  NCBI_filtered <- AST %>%
+    filter(`BioSample` %in% AMR$`BioSample`) %>%
     filter(`Resistance phenotype` %in% c("susceptible", "resistant")) %>%
-    select(`BioSample`, `Organism group`, Antibiotic, `Resistance phenotype`) %>%
-    left_join(NCBI_AMR %>% select(`BioSample`, `AMR genotypes`), by = "BioSample"
-    )%>%
+    select(`BioSample`, `Organism group`, Antibiotic, 
+           `Resistance.phenotype`=`Resistance phenotype`) %>%
+    left_join(AMR %>% select(`BioSample`, `AMR genotypes`), by = "BioSample") %>%
     filter(
       !is.na(`AMR genotypes`),
       trimws(`AMR genotypes`) != ""
@@ -72,48 +66,51 @@ filtre_donnes <- function(n_plis){
     filter(Antibiotic == "ciprofloxacin")
   
   # On veut mettre la banque en mode large pour l'ACM : 
-  # La colonne Resistance phenotype est en binaire : susceptible = 0 et resistant = 1
+  # La colonne Resistance.phenotype est en binaire : susceptible = 0 et resistant = 1
   # Une colonne désigne la présence ou non du gene
   
   genes_ACM_ciprofloxacin_wide <- genes_ciprofloxacin %>%
-    mutate(`Resistance phenotype` = if_else(`Resistance phenotype` == "susceptible", 0, 1)) %>%
+    mutate(`Resistance.phenotype` = if_else(`Resistance.phenotype` == "susceptible", 0, 1)) %>%
     mutate(presence = 1) %>%
     pivot_wider(
-      id_cols = c(BioSample, `Resistance phenotype`),
+      id_cols = c(BioSample, `Resistance.phenotype`),
       names_from = gene,
       values_from = presence,
       values_fill = 0
     )
   
-  # =============================================================================
-  # --------- creer banque d'entrainement et banque de validation/test ----------
-  # =============================================================================
+  # Valeur de retour
+  genes_ACM_ciprofloxacin_wide
   
-  # TODO refaire ça
-  pattern_validation <- c(1, 1, 1, rep(0, 17))
-  pattern_test <- c(rep(0, 17), 1, 1, 1)
-  pattern_entrainement <- c(rep(0, 3), rep(1, 14), rep(0, 3))
-  
-  banque_validation <- genes_ACM_ciprofloxacin_wide %>%
-    # ca choisit les 3 premiers sur 20 (15%) pour chaque chunk de 20 observations.
-    # le length.out = n, ca fait juste dire de continuer le pattern sur tout le tibble
-    # le == 1 dit de garder seulement les elements qui sont egals a 1 dans le pattern validation
-    filter(rep(pattern_validation, length.out = n())==1)
-  
-  banque_test <- genes_ACM_ciprofloxacin_wide %>%
-    filter(rep(pattern_test, length.out = n())==1)
-  
-  # banque d'entrainement est toutes les donnees sauf celles de test/validation
-  
-  banque_entrainement <- genes_ACM_ciprofloxacin_wide %>%
-    filter(rep(pattern_entrainement, length.out = n())==1)
-  
-  # Écrit les banques de données dans Data/
-  # return(
-  #     list(cross = bank_crossval, test = bank_test, cross_idx = cross_idx)
-  # )
-  
-  return(
-      list(train=banque_entrainement, val=banque_validation, test=banque_test)
-  )
+#   # =============================================================================
+#   # --------- creer banque d'entrainement et banque de validation/test ----------
+#   # =============================================================================
+#   
+#   # TODO refaire ça
+#   pattern_validation <- c(1, 1, 1, rep(0, 17))
+#   pattern_test <- c(rep(0, 17), 1, 1, 1)
+#   pattern_entrainement <- c(rep(0, 3), rep(1, 14), rep(0, 3))
+#   
+#   banque_validation <- genes_ACM_ciprofloxacin_wide %>%
+#     # ca choisit les 3 premiers sur 20 (15%) pour chaque chunk de 20 observations.
+#     # le length.out = n, ca fait juste dire de continuer le pattern sur tout le tibble
+#     # le == 1 dit de garder seulement les elements qui sont egals a 1 dans le pattern validation
+#     filter(rep(pattern_validation, length.out = n())==1)
+#   
+#   banque_test <- genes_ACM_ciprofloxacin_wide %>%
+#     filter(rep(pattern_test, length.out = n())==1)
+#   
+#   # banque d'entrainement est toutes les donnees sauf celles de test/validation
+#   
+#   banque_entrainement <- genes_ACM_ciprofloxacin_wide %>%
+#     filter(rep(pattern_entrainement, length.out = n())==1)
+#   
+#   # Écrit les banques de données dans Data/
+#   # return(
+#   #     list(cross = bank_crossval, test = bank_test, cross_idx = cross_idx)
+#   # )
+#   
+#   return(
+#       list(train=banque_entrainement, val=banque_validation, test=banque_test)
+#   )
 }

@@ -17,7 +17,7 @@ acm_custom <- function (entrainement, test){
   test_original <- test
   
   entrainement <- entrainement_original %>%
-    select(-Resistance.phenotype, -BioSample, -X) %>%
+    select(-any_of(c("Resistance.phenotype", "BioSample", "X"))) %>%
     # enlève les colonnes où toutes les valeurs sont la même (dans ce cas, sont tous égaux à 0)
     select(where(~ n_distinct(.) > 1)) %>%
     mutate(across(everything(), as.factor))
