@@ -12,7 +12,8 @@ filtre_donnes <- function(AST, AMR) {
     filter(`Resistance phenotype` %in% c("susceptible", "resistant")) %>%
     select(`BioSample`, `Organism group`, Antibiotic, 
            `Resistance.phenotype`=`Resistance phenotype`) %>%
-    left_join(AMR %>% select(`BioSample`, `AMR genotypes`), by = "BioSample") %>%
+    left_join(AMR %>% select(`BioSample`, `AMR genotypes`), by = "BioSample", 
+              relationship = "many-to-many") %>%
     filter(
       !is.na(`AMR genotypes`),
       trimws(`AMR genotypes`) != ""
