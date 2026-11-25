@@ -56,7 +56,7 @@
 library(KernelKnn)
 library(dplyr)
 
-knn_custom <- function(entrainement, validation, distance = "manhattan", nb_voisins = 5, kernel = "uniform") {
+knn_custom <- function(entrainement, validation, distance = "manhattan", nb_voisins = 5, kernel = NULL) {
   
   # =============================================================================
   # ------------------------- préparer pour la knn -----------------------------
@@ -100,7 +100,7 @@ knn_custom <- function(entrainement, validation, distance = "manhattan", nb_vois
     Levels = seq_along(levels(resistance_entrainement)),
     threads = max(1, parallel::detectCores() - 2)
     ) %>% 
-    rename(class_1 = susceptible, class_2 = resistant)
+    # rename(class_1 = susceptible, class_2 = resistant)
   predictions <- levels(resistance_entrainement)[max.col(model)]
   
   return(list(model = model, 
