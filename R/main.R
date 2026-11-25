@@ -47,13 +47,17 @@ variable_a_nommer_comme_du_monde <- future_sapply(
     1:nplis, 
     function(i) {
         
+        # Extraction des set de données train et val
         train <- donnees[idx_plis[[i]]$train, ]
         val <- donnees[idx_plis[[i]]$val, ]
         
+        # ACM -> KNN
         acm <- acm_custom(train, val)
-        
         knn <- knn_custom(acm$entrainement_acm, acm$test_acm)
         
+        # Calcul de l'erreur par rapport à la validation
+        pred <- as.numeric(knn[["predictions"]])
+        error <- sum(pred!=val$Resistance.phenotype) / length(pred)
     }
 )
     
