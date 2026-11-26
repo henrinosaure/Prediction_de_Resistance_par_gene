@@ -25,7 +25,7 @@ nplis <- 5
 
 
 # Définition de la graine pour la reproductibilité
-set.seed(122)
+set.seed(123)
 
 # Lecture des fichiers
 AST <- read_tsv("Data/NCBI_AST.tsv", show_col_types = FALSE) %>%
@@ -42,7 +42,7 @@ donnees_filtrees <- filtre_donnes(AST, AMR)
 idx_plis <- plier(dim(donnees_filtrees)[1], 5, 0.2)
 
 # ╔═════════════════════════════════════════╗
-# ║           Boucle sur les plis           ║
+# ║                 Boucle                  ║
 # ╚═════════════════════════════════════════╝
 
 # Initiation de la session de multithreading
@@ -57,13 +57,24 @@ combinaisons <- expand.grid(
     pli = c(1:nplis)
 )
 
-# La distance calculée avec l'indice de jaccard utilise des données binaires. On ne peut
-# donc pas utiliser l'AXM avec Jaccard. On doit donc enlever les combinaisons qui font une
+# --- FILTRAGE DE 2 COMBINAISONS ---
+# 1. La distance calculée avec l'indice de jaccard utilise des données binaires. On ne peut
+# donc pas utiliser l'ACM avec Jaccard. On doit donc enlever les combinaisons qui font une
 # ACM et qui utilisent l'indice de Jaccard.
-combinaisons <- combinaisons %>% 
-    filter(!(do_acm == TRUE & distance == "jaccard_coefficient"))
+#
+# 2. Dans les combinaisons ou on ne fait pas d'ACM, on travaille avec des distances sur
+# des variables binaires. Cela signifie que la seule différence entre les distances de
+# Mannhattan et Euclidienne est que la distance Euclidienne contient une racine carrée
+# (Man = Euc²). Par conséquent, l'ordre de distance des K voisins est la même pour ces 2
+# distances. Il est donc redondant de claculer une KNN pour ces 2 distances. On ne
+# calculera que Manhattan (plus simple). On retire donc les combinaisons qui croisent
+# Euclidienne et pas d'ACM.
 
-variable_a_nommer_comme_du_monde <- array(
+combinaisons <- combinaisons %>% 
+    filter(!(do_acm == TRUE & distance == "jaccard_coefficient")) %>%
+    filter(!(do_acm == FALSE & distance == "euclidean"))
+
+all_err <- array(
     NA,
     dim = c(length(poss_k), length(poss_acm), length(poss_distance), nplis),
     dimnames = list(
@@ -75,7 +86,7 @@ variable_a_nommer_comme_du_monde <- array(
 )
 
 # Début de la boucle sur toutes les combinaisons
-error_list <- future_lapply(
+err_list <- future_lapply(
     
     1:dim(combinaisons)[1],
     function(i) {
@@ -115,19 +126,35 @@ error_list <- future_lapply(
     future.seed=TRUE
 )
 
-for (i in 1:length(error_list)) {
-    variable_a_nommer_comme_du_monde[
-        error_list[[i]]$k, 
-        error_list[[i]]$do_acm, 
-        error_list[[i]]$distance, 
-        error_list[[i]]$pli
-    ] <- error_list[[i]]$error
+for (i in 1:length(err_list)) {
+    all_err[
+        err_list[[i]]$k, 
+        err_list[[i]]$do_acm, 
+        err_list[[i]]$distance, 
+        err_list[[i]]$pli
+    ] <- err_list[[i]]$error
 }
 
-# DEBUG EF
-view(variable_a_nommer_comme_du_monde)
+all_err <- apply(all_err, c(1,2,3), mean)
 
-print(apply(variable_a_nommer_comme_du_monde, c(1,2,3), mean))
+view(all_err)
 
+# Ciblage de la meilleure combinaison
+best_err <- min(all_err, na.rm=TRUE)
+best_idx <- which(all_err == best_err, arr.ind = TRUE)
+
+best_combinaison <- mapply(
     
+    function(dim_name, indice) {
+        dimnames(all_err)[[dim_name]][indice]
+    },
+    
+    dim_name = colnames(best_idx),
+    indice = best_idx[1, ],
+    SIMPLIFY = TRUE
+)
+
+print(paste0("Meilleure erreur :", best_err))
+print(best_combinaison)
+
    
