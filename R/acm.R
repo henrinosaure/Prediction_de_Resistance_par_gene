@@ -79,7 +79,7 @@ acm_custom <- function (entrainement, test){
   test_acm <- cbind(test_original[, "Resistance.phenotype", drop = FALSE], X_test_reduit)
   
   return(list(
-    entrainement_acm = entrainement_acm,
-    test_acm = test_acm
+    train = entrainement_acm,
+    test = test_acm
   ))
 }

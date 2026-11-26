@@ -29,17 +29,6 @@
 #
 # • nb_voisins (int)
 #   nombre de voisins
-#     
-# • kernel (string)
-#     noyau de pondération des voisins choisi :
-#     "uniform" = Uniforme (poids égaux)
-#     "triangular" = Triangulaire
-#     "epanechnikov" = Epanechnikov
-#     "biweight" = Biquadratique
-#     "gaussian" = Gaussien
-#     "inverse" = Inverse de la distance
-#     "exponential" = Exponentiel
-#     NULL si distance est jaccard
 # 
 #    Returns
 #  ═══════════
@@ -59,18 +48,14 @@ library(dplyr)
 knn_custom <- function(entrainement, validation, distance = "manhattan", nb_voisins = 5, kernel = NULL) {
   
   # =============================================================================
-  # ------------------------- préparer pour la knn -----------------------------
+  # ------------------------- préparer pour la knn ------------------------------
   # =============================================================================
   # Make sure that both entrainement and validation dont have BioSample 
   # and also have Resistance.phenotype as a factor
   entrainement <- entrainement %>%
-    select(-any_of("BioSample")) %>%
-    select(-any_of("X")) %>%
-    mutate(Resistance.phenotype = as.factor(Resistance.phenotype))
+    select(-any_of(c("BioSample", "X")))
   validation <- validation %>%
-    select(-any_of("BioSample")) %>%
-    select(-any_of("X")) %>%
-    mutate(Resistance.phenotype = as.factor(Resistance.phenotype))
+    select(-any_of(c("BioSample", "X")))
   
   # =============================================================================
   # -------------------------- librairie KernelKnn ------------------------------
