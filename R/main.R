@@ -125,7 +125,7 @@ for (i in 1:length(error_list)) {
 }
 
 # DEBUG EF
-view (variable_a_nommer_comme_du_monde)
+view(variable_a_nommer_comme_du_monde)
 
 print(apply(variable_a_nommer_comme_du_monde, c(1,2,3), mean))
 
