@@ -24,14 +24,11 @@
 #               colonne 2 = predit neg
 #               rangee 1 = reel pos
 #               rangee 2 = reel neg
-# 2. sensibilite (int)
-# 3. specificite (int)
-# 4. precisiion (int)
-# 5. precision (int)
+# 2. sensibilite (float)
+# 3. specificite (float)
+# 4. precision (float)
+# 5. exactitude (float)
 #
-
-
-
 
 infos_knn <- function(predictions_test, resistance_test) {
   # vrais positifs
