@@ -1,6 +1,70 @@
+# Author : Henry Cloutier
+# Date : nov 2026
+#
+#
+#    Description
+#  ═══════════════
+#  Fonction permettant de nettoyer, filtrer et combiner les banques
+#  de données AST et AMR du NCBI afin de préparer les données pour
+#  l'analyse de la résistance aux antibiotiques.
+#
+#  La fonction effectue les opérations suivantes :
+#  - Combine les données phénotypiques et génotypiques par BioSample.
+#  - Garde uniquement les phénotypes susceptible et resistant.
+#  - Enlève les observations sans génotype AMR renseigné.
+#  - Sépare les génotypes en gènes individuels.
+#  - Enlève les gènes présents chez moins de 10 isolats.
+#  - Garde les 25 antibiotiques les plus fréquents.
+#  - Enlève les doublons de combinaisons BioSample/Antibiotic/gene.
+#  - Garde uniquement les observations pour la ciprofloxacine.
+#  - Convertit les données en format large et binaire.
+#  - Enlève les observations ayant des profils génétiques identiques.
+#
+#
+#    Arguments
+#  ═════════════
+# • AST (data.frame)
+#     Banque de données phénotypiques de résistance aux antibiotiques.
+#     Colonnes nécessaires :
+#     - BioSample
+#     - Organism group
+#     - Antibiotic
+#     - Resistance phenotype
+#
+# • AMR (data.frame)
+#     Banque de données génotypiques de résistance aux antibiotiques.
+#     Colonnes nécessaires :
+#     - BioSample
+#     - AMR genotypes
+#       Gènes séparés par des virgules, sous la forme gene=detection.
+#
+#
+#    Returns
+#  ═══════════
+#  Un tibble en format large contenant :
+#
+#  - BioSample : identifiant unique de l'échantillon.
+#
+#  - Resistance.phenotype : phénotype de résistance à la ciprofloxacine.
+#       0 = susceptible
+#       1 = résistant
+#
+#  - Colonnes de gènes : une colonne par gène retenu.
+#       0 = absence du gène dans les annotations
+#       1 = présence du gène dans les annotations
+#
+#  Chaque ligne correspond à une observation ayant un profil
+#  génétique unique.
+#
+#
+#    Dependencies
+#  ════════════════
+#  tidyverse
+#
+
 #install.packages("tidyverse")
 library(tidyverse)
-filtre_donnes <- function(AST, AMR) {
+filtre_donnes <- function(AST, AMR, antibiotique = "ciprofloxacin") {
   # =============================================================================
   # ---------- Lecture et clean/réorganisation des fichiers de données ----------
   # =============================================================================
@@ -61,10 +125,10 @@ filtre_donnes <- function(AST, AMR) {
   # -------------------- préparer les données pour l'ACM ------------------------
   # =============================================================================
   
-  # Ciprofloxacin est l'antibiotique le plus frequent dans la banque filtrée
-  # On va donc le garder pour la 1re analyse
+  # Enlève tous les antibiotiques qui ne sont pas celui choisi
+  # ciprofloxacin par défaut
   genes_ciprofloxacin <- NCBI_genes_filtered %>%
-    filter(Antibiotic == "ciprofloxacin")
+    filter(Antibiotic == antibiotique)
   
   # On veut mettre la banque en mode large pour l'ACM : 
   # La colonne Resistance.phenotype est en binaire : susceptible = 0 et resistant = 1
