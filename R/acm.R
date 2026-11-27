@@ -7,14 +7,14 @@ library(dplyr)
 
 # INPUT : -entrainement, une matrice contenant les colonnes Resistance.phenotype, 
 #         Biosample et tous les genes en valeurs binaires
-#         - test, meme format
-# OUTPUT: une liste contenant entrainement_acm et test_acm. Ce sont les matrices
-#         entrainement et test, projetés sur la matrice de l'ACM. Ils ont la colonne
+#         - val, meme format
+# OUTPUT: une liste contenant entrainement_acm et val_acm. Ce sont les matrices
+#         entrainement et val, projetés sur la matrice de l'ACM. Ils ont la colonne
 #         Resistance.phenotype
-acm_custom <- function (entrainement, test){
+acm_custom <- function (entrainement, val){
   
   entrainement_original <- entrainement
-  test_original <- test
+  val_original <- val
   
   entrainement <- entrainement_original %>%
     select(-any_of(c("Resistance.phenotype", "BioSample", "X"))) %>%
@@ -25,11 +25,11 @@ acm_custom <- function (entrainement, test){
   # Fait l'ACM
   acm1 <- MCA(entrainement, ncp = 650, graph = FALSE)
   
-  # Lire banque_test
-  test <- test_original %>%
+  # Lire banque_val
+  val <- val_original %>%
     # garder exactement les mêmes gènes que pour l'ACM
     select(all_of(names(entrainement)))
-  test_corrige <- test
+  val_corrige <- val
   
   # Codé par IA : 
   for (col in names(entrainement)) {
@@ -45,8 +45,8 @@ acm_custom <- function (entrainement, test){
     correspondance <- setNames(interne[indices], original[indices])
     
     # Vérifier les modalités inconnues
-    valeurs_test <- as.character(test[[col]])
-    inconnues <- setdiff(unique(valeurs_test), names(correspondance))
+    valeurs_val <- as.character(val[[col]])
+    inconnues <- setdiff(unique(valeurs_val), names(correspondance))
     
     if (length(inconnues) > 0) {
       stop(paste("Modalités inconnues dans", col,
@@ -54,14 +54,14 @@ acm_custom <- function (entrainement, test){
     }
     
     # Appliquer le codage de l'ACM
-    test_corrige[[col]] <- factor(
-      unname(correspondance[valeurs_test]),
+    val_corrige[[col]] <- factor(
+      unname(correspondance[valeurs_val]),
       levels = levels(acm1$call$X[[col]])
     )
   }
   
-  # Projeter toutes les observations de test
-  projection_test <- predict(acm1, newdata = test_corrige)
+  # Projeter toutes les observations de val
+  projection_val <- predict(acm1, newdata = val_corrige)
   
   # Critère % variance cumulée >90%
   n_axes <- which(acm1$eig[, 3] >= 90)[1]
@@ -71,15 +71,15 @@ acm_custom <- function (entrainement, test){
   # Matrice des coordonnées des observations (gènes seulement), entrainement
   X_entrainement_reduit <- acm1$ind$coord[, 1:n_axes, drop = FALSE]
   
-  # Matrice des coordonnées des observations (gènes seulement), test
-  X_test_reduit <- projection_test$coord[, 1:n_axes, drop = FALSE]
+  # Matrice des coordonnées des observations (gènes seulement), val
+  X_val_reduit <- projection_val$coord[, 1:n_axes, drop = FALSE]
   
   entrainement_acm <- cbind(entrainement_original[, "Resistance.phenotype", drop = FALSE], X_entrainement_reduit)
     
-  test_acm <- cbind(test_original[, "Resistance.phenotype", drop = FALSE], X_test_reduit)
+  val_acm <- cbind(val_original[, "Resistance.phenotype", drop = FALSE], X_val_reduit)
   
   return(list(
     train = entrainement_acm,
-    test = test_acm
+    val = val_acm
   ))
 }

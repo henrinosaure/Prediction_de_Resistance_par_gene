@@ -6,19 +6,21 @@ source("R/filtre_donnees.R")
 source("R/plier.R")
 source("R/acm.R")
 source("R/knn.R")
+source("R/infos_knn.R")
 
 library(FactoMineR)
 library(factoextra)
 library(dplyr)
 library(future)
 library(future.apply)
+library(caret)
 
 # ╔═════════════════════════════════════════╗
 # ║                   Main                  ║
 # ╚═════════════════════════════════════════╝
 
 # Définition des paramètres pour l'entrainement
-poss_k <- c(1, 3, 5, 7, 9, 13, 17, 21)
+poss_k <- c(1, 3, 5, 7, 9, 11, 13, 15, 17)
 poss_acm <- c(TRUE, FALSE)
 poss_distance <- c("manhattan", "euclidean", "jaccard_coefficient")
 nplis <- 5
@@ -36,10 +38,18 @@ AMR <- read_tsv("Data/NCBI_AMR.tsv", show_col_types = FALSE) %>%
 # Filtrage des données
 donnees_filtrees <- filtre_donnes(AST, AMR)
 
-# TODO garder un test
+# Séparation en test / développement (train et val)
+idx_dev <- createDataPartition(
+    y = donnees_filtrees$Resistance.phenotype,
+    p = 0.8,
+    list = FALSE
+)
+
+donnees_dev <- donnees_filtrees[idx_dev,]
+donnees_test <- donnees_filtrees[-idx_dev,] 
 
 # Définition des indices des plis des données
-idx_plis <- plier(dim(donnees_filtrees)[1], 5, 0.2)
+idx_plis <- plier(dim(donnees_dev)[1], 5, 0.2)
 
 # ╔═════════════════════════════════════════╗
 # ║                 Boucle                  ║
@@ -53,14 +63,13 @@ plan(multisession, workers = parallel::detectCores())
 combinaisons <- expand.grid(
     k = poss_k,
     do_acm = poss_acm,
-    distance = poss_distance,
-    pli = c(1:nplis)
+    distance = poss_distance
 )
 
 # --- FILTRAGE DE 2 COMBINAISONS ---
-# 1. La distance calculée avec l'indice de jaccard utilise des données binaires. On ne peut
-# donc pas utiliser l'ACM avec Jaccard. On doit donc enlever les combinaisons qui font une
-# ACM et qui utilisent l'indice de Jaccard.
+# 1. La distance calculée avec l'indice de jaccard utilise des données binaires. On ne
+# peut donc pas utiliser l'ACM avec Jaccard. On doit donc enlever les combinaisons qui
+# font une ACM et qui utilisent l'indice de Jaccard.
 #
 # 2. Dans les combinaisons ou on ne fait pas d'ACM, on travaille avec des distances sur
 # des variables binaires. Cela signifie que la seule différence entre les distances de
@@ -76,85 +85,69 @@ combinaisons <- combinaisons %>%
 
 all_err <- array(
     NA,
-    dim = c(length(poss_k), length(poss_acm), length(poss_distance), nplis),
+    dim = c(length(poss_k), length(poss_acm), length(poss_distance), nplis, 4),
     dimnames = list(
         k = poss_k,
         acm = poss_acm,
-        distance = poss_distance,
-        pli = paste0("pli", 1:nplis)
+        distance = poss_distance#,
+        # metrique = c("exactitude", "precision", "sensibilite", "specificite")
     )
 )
 
 # Début de la boucle sur toutes les combinaisons
-err_list <- future_lapply(
-    
-    1:dim(combinaisons)[1],
-    function(i) {
+# Utilisation de future.apply pour le multithreading
+# La boucle retourne une liste contenant les erreurs de toutes les combinaisons
+err_list <- future_lapply(1:dim(combinaisons)[1], function(i) {
         
-        # Extraction des paramètres pour l'itération courante
-        k <- combinaisons$k[i]
-        do_acm <- combinaisons$do_acm[i]
-        distance <- as.character(combinaisons$distance[i])
-        pli <- combinaisons$pli[i]
+    # Extraction des paramètres pour l'itération courante
+    k <- combinaisons$k[i]
+    do_acm <- combinaisons$do_acm[i]
+    distance <- as.character(combinaisons$distance[i])
+    
+    # Manipulations sur chaque pli. La variable metriques contiendra les valeurs pour
+    # tous les plis
+    metriques <- sapply(1:5, function(pli) {
         
         # Extraction des set de données train et val
-        train <- donnees_filtrees[idx_plis[[pli]]$train, ]
-        val <- donnees_filtrees[idx_plis[[pli]]$val, ]
+        train <- donnees_dev[idx_plis[[pli]]$train, ]
+        val <- donnees_dev[idx_plis[[pli]]$val, ]
         
         # ACM si nécessaire
         if (do_acm) {
             donnees_projetees <- acm_custom(train, val)
         } else {
-            donnees_projetees <- list(train = train, test = val)
+            donnees_projetees <- list(train = train, val = val)
         }
         
         # KNN
-        knn <- knn_custom(donnees_projetees$train, donnees_projetees$test, distance, k)
+        knn <- knn_custom(donnees_projetees$train, donnees_projetees$val, distance, k)
         
         # Calcul de l'erreur par rapport à la validation
-        pred <- as.numeric(knn[["predictions"]])
-        error <- sum(pred!=val$Resistance.phenotype) / length(pred)
-        
-        list(
-            error = error,
-            k = as.character(k),
-            do_acm = as.character(do_acm),
-            distance = as.character(distance),
-            pli = paste0("pli", pli)
-        )
-    },
-    future.seed=TRUE
-)
+        gt <- val$Resistance.phenotype
+        pr <- as.numeric(knn[["predictions"]])
+        metriques_du_pli <- infos_knn(pr, gt)
+        as.numeric(metriques_du_pli[-1]) # On retire la matrice de confusion
+    })
+    
+    # On fait la moyenne pour chaque pli
+    metriques <- apply(metriques, 1, mean)
+    names(metriques) <- c("exactitude", "precision", "sensibilite", "specificite")
+    
+    # Valeur de retour de chaque itération de la boucle
+    data.frame(
+        exactitude = metriques["exactitude"],
+        precision = metriques["precision"],
+        sensibilite = metriques["sensibilite"],
+        specificite = metriques["specificite"],
+        k = as.character(k),
+        do_acm = as.character(do_acm),
+        distance = as.character(distance)
+    )
+}, future.seed=TRUE)
 
-for (i in 1:length(err_list)) {
-    all_err[
-        err_list[[i]]$k, 
-        err_list[[i]]$do_acm, 
-        err_list[[i]]$distance, 
-        err_list[[i]]$pli
-    ] <- err_list[[i]]$error
-}
-
-all_err <- apply(all_err, c(1,2,3), mean)
-
-view(all_err)
+# On forme un gros data.frame qui contient toutes les métriques
+err_list <- bind_rows(err_list)
 
 # Ciblage de la meilleure combinaison
-best_err <- min(all_err, na.rm=TRUE)
-best_idx <- which(all_err == best_err, arr.ind = TRUE)
+print(filter(err_list, exactitude == max(exactitude)))
 
-best_combinaison <- mapply(
-    
-    function(dim_name, indice) {
-        dimnames(all_err)[[dim_name]][indice]
-    },
-    
-    dim_name = colnames(best_idx),
-    indice = best_idx[1, ],
-    SIMPLIFY = TRUE
-)
-
-print(paste0("Meilleure erreur :", best_err))
-print(best_combinaison)
-
-   

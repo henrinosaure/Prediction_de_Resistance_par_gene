@@ -4,13 +4,15 @@
 # 
 #    Description
 #  ═══════════════
-#  fonction qui trouve la matrice de confusion, sensibilite, specificite, precision et exactitude des resultats
+#  fonction qui trouve la matrice de confusion, sensibilite, specificite, precision et
+#  exactitude des resultats
 # 
 # 
 #    Arguments
 #  ═════════════
 # • predictions_test (vecteur)
-#     vecteur, contenant seulement des 0 et des 1, des predictions de resistance/susceptibilite
+#     vecteur, contenant seulement des 0 et des 1, des predictions de
+#     resistance/susceptibilite
 # 
 # • resistance_test (vecteur)
 #     vecteur, contenant seulement des 0 et des 1, des vraies valeurs du test
@@ -30,18 +32,16 @@
 # 5. precision (int)
 #
 
-
-
-
-infos_knn <- function(predictions_test, resistance_test) {
+infos_knn <- function(pr, gt) {
+  
   # vrais positifs
-  vp <- sum((predictions_test == 1) & (resistance_test == 1))
+  vp <- sum((pr == 1) & (gt == 1))
   # faux positifs
-  fp <- sum((predictions_test == 1) & (resistance_test == 0))
+  fp <- sum((pr == 1) & (gt == 0))
   # vrais negatifs
-  vn <- sum((predictions_test == 0) & (resistance_test == 0))
+  vn <- sum((pr == 0) & (gt == 0))
   # faux negatifs
-  fn <- sum((predictions_test == 0) & (resistance_test == 1))
+  fn <- sum((pr == 0) & (gt == 1))
   
   matrice_confusion <- data.frame(
     Predit_positif = c(vp, fp),
@@ -49,14 +49,17 @@ infos_knn <- function(predictions_test, resistance_test) {
     row.names = c("Reel positif", "Reel negatif")
   )
   
-  sensibilite <- vp/(vp+fn)
-  specificite <- vn/(vn + fp)
-  precision <- vp/(vp + fp)
-  exactitude <- (vp + vn)/(vp + vn + fp + fn)
+  exactitude <- (vp + vn) / (vp + vn + fp + fn) # Combien de prédictions sont bonnes?
+  precision <- vp / (vp + fp) # Parmi les prédictions positives, combien sont vraies?
+  sensibilite <- vp / (vp + fn) # Combien de positifs ont été détéctés?
+  specificite <- vn / (vn + fp) # Combien de négatifs ont été détéctés
   
-  return(list(matrice_confusion = matrice_confusion, 
-              sensibilite = sensibilite, 
-              specificite = specificite, 
-              precision = precision, 
-              exactitude = exactitude))
+  return(list(
+    matrice_confusion = matrice_confusion, 
+    exactitude = exactitude,
+    precision = precision, 
+    sensibilite = sensibilite, 
+    specificite = specificite 
+    )
+  )
 }
