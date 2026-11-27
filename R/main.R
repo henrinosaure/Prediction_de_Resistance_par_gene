@@ -45,5 +45,5 @@ modele_final <- train_test(
 # Envoi à la console des performances du modèle
 cat("\n--- LE MODÈLE FINAL ET PERFORMANCES SUR LE JEU DE VALIDATION ---:\n")
 print(modele_final$parametres_modele)
-cat("\nperformances sur le jeu de test:\n")
+cat("\n--- PERFORMANCES SUR LE JEU DE VALIDATION ---:\n")
 print(as.data.frame(modele_final$performance[-1]))
