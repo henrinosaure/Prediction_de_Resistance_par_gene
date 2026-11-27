@@ -52,5 +52,5 @@ gène pas présent dans données =/= gène absent du génome... comment on trait
 
 Pour installer les paquets nécessaires au projet, lancer la commande suivante:
 
-install.packages(c("dplyr", "future", "KernelKnn", "tidyverse", "FactoMineR", "factoextra"))
+install.packages(c("dplyr", "future", "KernelKnn", "tidyverse", "FactoMineR", "factoextra", "future.apply"))
 
