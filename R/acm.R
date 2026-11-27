@@ -63,7 +63,7 @@ acm_custom <- function (entrainement, test){
   # Projeter toutes les observations de test
   projection_test <- predict(acm1, newdata = test_corrige)
   
-  # Critère % variance cumulée >90%
+  # Critère % variance cumulée >1/p
   n_axes <- which(acm1$eig[, 2] <= 100/650)[1]
   
   
