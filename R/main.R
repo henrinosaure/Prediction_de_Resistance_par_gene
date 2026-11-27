@@ -151,3 +151,4 @@ err_list <- bind_rows(err_list)
 # Ciblage de la meilleure combinaison
 print(filter(err_list, exactitude == max(exactitude)))
 
+write.csv(err_list, "Data/err_list.csv", row.names = TRUE)

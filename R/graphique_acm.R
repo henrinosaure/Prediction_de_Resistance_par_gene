@@ -39,7 +39,8 @@ acm1 <- MCA(entrainement, ncp = 650, graph = FALSE)
 
 # Valeurs pour le graphique : variance cumulée et indexes
 
-dernier_index_choisi = which(acm1$eig[, 3] > 90)[1]
+dernier_index_choisi = which(acm1$eig[, 2] <= 100/650)[1]
+variance_choisie <- acm1$eig[dernier_index_choisi, 3]
 
 df <- data.frame(
   variance_cumulee = variance_cumulee,
@@ -54,8 +55,8 @@ graphique <- ggplot(data = df, aes(x = axes, y = variance_cumulee)) +
   # Ligne pointillée horizontale
   annotate(
     "segment",
-    x = 0, y = 90,
-    xend = dernier_index_choisi, yend = 90,
+    x = 0, y = variance_choisie,
+    xend = dernier_index_choisi, yend = variance_choisie,
     linetype = "dashed",
     color = "#2f3e36",
     linewidth = 0.9
@@ -64,7 +65,7 @@ graphique <- ggplot(data = df, aes(x = axes, y = variance_cumulee)) +
   # Ligne pointillée verticale
   annotate(
     "segment",
-    x = dernier_index_choisi, y = 90,
+    x = dernier_index_choisi, y = variance_choisie,
     xend = dernier_index_choisi, yend = 0,
     linetype = "dashed",
     color = "#2f3e36",
@@ -84,6 +85,19 @@ graphique <- ggplot(data = df, aes(x = axes, y = variance_cumulee)) +
     linewidth = 0
   ) +
   
+  # Mise en évidence de l'inertie cumulée
+  annotate(
+    "label",
+    x = 0,
+    y = variance_choisie,
+    label = paste0(round(variance_choisie, 1), "%"),
+    fill = "#455f51",
+    color = "white",
+    fontface = "bold",
+    size = 4.5,
+    linewidth = 0
+  ) +
+  
   # Titres
   labs(
     title = "Sélection du nombre d'axes de l'ACM",
@@ -91,12 +105,13 @@ graphique <- ggplot(data = df, aes(x = axes, y = variance_cumulee)) +
     y = "Inertie cumulée expliquée (%)"
   ) +
   
-  # Graduations des axes
+  # Graduations de l'axe X
   scale_x_continuous(
     breaks = seq(0, max(df$axes), by = 100),
-    expand = expansion(mult = c(0, 0.02))
+    expand = expansion(mult = c(0.05, 0.02))
   ) +
   
+  # Graduations de l'axe Y
   scale_y_continuous(
     breaks = seq(0, 100, by = 10),
     limits = c(0, 100),
@@ -119,7 +134,9 @@ graphique <- ggplot(data = df, aes(x = axes, y = variance_cumulee)) +
     axis.title = element_text(
       face = "bold", color = "#2f3e36"
     ),
-    axis.text = element_text(color = "#2f3e36"),
+    axis.text = element_text(
+      color = "#2f3e36"
+    ),
     plot.title = element_text(
       face = "bold",
       size = 18,
@@ -129,10 +146,15 @@ graphique <- ggplot(data = df, aes(x = axes, y = variance_cumulee)) +
     plot.margin = margin(15, 15, 15, 15)
   )
 
+# Affichage
+print(graphique)
+
+# Exportation
 ggsave(
   "Graphiques/graphique_ACM.svg",
   plot = graphique,
   width = 25,
   height = 15,
-  units = "cm"
+  units = "cm",
+  bg = "#d1dfce"
 )
