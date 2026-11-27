@@ -45,52 +45,60 @@
 library(KernelKnn)
 library(dplyr)
 
-knn_custom <- function(entrainement, validation, distance = "manhattan", nb_voisins = 5, kernel = NULL) {
-  
-  # =============================================================================
-  # ------------------------- préparer pour la knn ------------------------------
-  # =============================================================================
-  # Make sure that both entrainement and validation dont have BioSample 
-  # and also have Resistance.phenotype as a factor
-  entrainement <- entrainement %>%
-    select(-any_of(c("BioSample", "X")))
-  validation <- validation %>%
-    select(-any_of(c("BioSample", "X")))
-  
-  # =============================================================================
-  # -------------------------- librairie KernelKnn ------------------------------
-  # =============================================================================
-  
-  # Cette librairie nécessite que les banques de données soient sans leur classe
-  # genes_entrainement s'agit de tous les gênes sans la résistance
-  # même affaire pour genes test
-  genes_entrainement <- entrainement %>%
-    select(-Resistance.phenotype)
-  
-  genes_test <- validation %>%
-    select(-Resistance.phenotype)
-  
-  # resistance_entrainement c basically la colonne de Resistance.phenotype
-  resistance_entrainement <- as.factor(entrainement$Resistance.phenotype)
-  
-  # model est un
-  model <- KernelKnn(
-    data = genes_entrainement,
-    TEST_data = genes_test,
-    y = as.integer(resistance_entrainement),
-    k = nb_voisins,
-    method = distance,
-    weights_function = kernel,
-    regression = FALSE,
-    Levels = seq_along(levels(resistance_entrainement)),
-    threads = max(1, parallel::detectCores() - 2)
-    ) %>%
+knn_custom <- function(
+    entrainement, 
+    validation, 
+    distance = "manhattan", 
+    nb_voisins = 5
+) {
     
-    as.data.frame() %>%
-    rename(susceptible = class_1, resistant = class_2)
-  
-  predictions <- levels(resistance_entrainement)[max.col(model)]
-  
-  return(list(model = model, 
-            predictions = predictions))
+    # =============================================================================
+    # ------------------------- préparer pour la knn ------------------------------
+    # =============================================================================
+    # Make sure that both entrainement and validation dont have BioSample 
+    # and also have Resistance.phenotype as a factor
+    entrainement <- entrainement %>%
+        select(-any_of(c("BioSample", "X")))
+    validation <- validation %>%
+        select(-any_of(c("BioSample", "X")))
+    
+    # =============================================================================
+    # -------------------------- librairie KernelKnn ------------------------------
+    # =============================================================================
+    
+    # Cette librairie nécessite que les banques de données soient sans leur classe
+    # genes_entrainement s'agit de tous les gênes sans la résistance
+    # même affaire pour genes test
+    genes_entrainement <- entrainement %>%
+        select(-Resistance.phenotype)
+    
+    genes_test <- validation %>%
+        select(-Resistance.phenotype)
+    
+    # resistance_entrainement c basically la colonne de Resistance.phenotype
+    resistance_entrainement <- as.factor(entrainement$Resistance.phenotype)
+    
+    # model est un
+    model <- KernelKnn(
+        data = genes_entrainement,
+        TEST_data = genes_test,
+        y = as.integer(resistance_entrainement),
+        k = nb_voisins,
+        method = distance,
+        weights_function = NULL,
+        regression = FALSE,
+        Levels = seq_along(levels(resistance_entrainement)),
+        threads = max(1, parallel::detectCores() - 2)
+        ) %>%
+        
+        as.data.frame() %>%
+        rename(susceptible = class_1, resistant = class_2)
+    
+    # Extraction des prédictions du modèle sur la validation  
+    predictions <- levels(resistance_entrainement)[max.col(model)]
+    
+    return(list(
+        model = model, 
+        predictions = predictions
+    ))
 }

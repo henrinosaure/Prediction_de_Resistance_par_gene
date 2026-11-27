@@ -1,5 +1,3 @@
-#install.packages("FactoMineR")
-#install.packages("factoextra")
 
 library(FactoMineR)
 library(factoextra)

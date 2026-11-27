@@ -1,3 +1,4 @@
+
 train_test <- function(donnees_filtrees, nplis, poss_k, poss_distance, test_acm) {
     
     # Séparation en test / développement (train et val)
@@ -48,9 +49,9 @@ train_test <- function(donnees_filtrees, nplis, poss_k, poss_distance, test_acm)
         )
     )
     
-    # ╔════════════════════════════════════════════════════════════════════════════════════════════╗
-    # ║                                           Boucle                                           ║                                                  
-    # ╚════════════════════════════════════════════════════════════════════════════════════════════╝
+    # ╔══════════════════════════════════════════════════════════════════════════════════╗
+    # ║                                      Boucle                                      ║
+    # ╚══════════════════════════════════════════════════════════════════════════════════╝
     
     # Initiation de la session de multithreading
     plan(multisession, workers = parallel::detectCores())
@@ -110,9 +111,9 @@ train_test <- function(donnees_filtrees, nplis, poss_k, poss_distance, test_acm)
     err_list <- bind_rows(err_list)
     
     
-    # ╔════════════════════════════════════════════════════════════════════════════════════════════╗
-    # ║                   Ciblage des paramètres et entrainement du modele final                   ║
-    # ╚════════════════════════════════════════════════════════════════════════════════════════════╝
+    # ╔══════════════════════════════════════════════════════════════════════════════════╗
+    # ║              Ciblage des paramètres et entrainement du modele final              ║
+    # ╚══════════════════════════════════════════════════════════════════════════════════╝
     
     # Ciblage de la meilleure combinaison
     best_comb <- filter(err_list, exactitude == max(exactitude))
