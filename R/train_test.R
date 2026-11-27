@@ -38,17 +38,6 @@ train_test <- function(donnees_filtrees, nplis, poss_k, poss_distance, test_acm)
         filter(!(do_acm == TRUE & distance == "jaccard_coefficient")) %>% # #1
         filter(!(do_acm == FALSE & distance == "euclidean")) # #2
     
-    all_err <- array(
-        NA,
-        dim = c(length(poss_k), length(poss_acm), length(poss_distance), nplis, 4),
-        dimnames = list(
-            k = poss_k,
-            acm = poss_acm,
-            distance = poss_distance#,
-            # metrique = c("exactitude", "precision", "sensibilite", "specificite")
-        )
-    )
-    
     # ╔══════════════════════════════════════════════════════════════════════════════════╗
     # ║                                      Boucle                                      ║
     # ╚══════════════════════════════════════════════════════════════════════════════════╝
