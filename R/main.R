@@ -16,7 +16,7 @@ library(future.apply)
 library(caret)
 
 # ╔═════════════════════════════════════════╗
-# ║                   Main                  ║
+# ║                   Paramètres                  ║
 # ╚═════════════════════════════════════════╝
 
 # Définition des paramètres pour l'entrainement
@@ -106,7 +106,7 @@ err_list <- future_lapply(1:dim(combinaisons)[1], function(i) {
     
     # Manipulations sur chaque pli. La variable metriques contiendra les valeurs pour
     # tous les plis
-    metriques <- sapply(1:5, function(pli) {
+    metriques <- sapply(1:nplis, function(pli) {
         
         # Extraction des set de données train et val
         train <- donnees_dev[idx_plis[[pli]]$train, ]
@@ -134,7 +134,7 @@ err_list <- future_lapply(1:dim(combinaisons)[1], function(i) {
     names(metriques) <- c("exactitude", "precision", "sensibilite", "specificite")
     
     # Valeur de retour de chaque itération de la boucle
-    data.frame(
+    list(
         exactitude = metriques["exactitude"],
         precision = metriques["precision"],
         sensibilite = metriques["sensibilite"],
@@ -149,6 +149,6 @@ err_list <- future_lapply(1:dim(combinaisons)[1], function(i) {
 err_list <- bind_rows(err_list)
 
 # Ciblage de la meilleure combinaison
-print(filter(err_list, exactitude == max(exactitude)))
+best_comb <- filter(err_list, exactitude == max(exactitude))
 
-write.csv(err_list, "Data/err_list.csv", row.names = TRUE)
+# write.csv(err_list, "Data/err_list.csv", row.names = TRUE)
